@@ -9,25 +9,26 @@ function App() {
 }
 
 export default App;
+const pattern = /^\d+$/;
 
 /**
- * disable all buttons except 0-9 and "-" sign when empty
+ * (OK) disable all buttons except 0-9 and "-" sign when empty
  *
- * division must be floored
+ * (OK) division must be floored
  *
- * when the last element is a number, all buttons will be enabled
+ * (Ok) when the last element is a number, all buttons will be enabled
  *
- * if "=" is pressed should compute the answer only if the last digit is a number
+ * (Ok) if "=" is pressed should compute the answer only if the last digit is a number
  *
- * "=" must be disabled if the las character is not a number
+ * (Ok)  "=" must be disabled if the las character is not a number
  *
- * if the last character is an operator and it is pressed another operator, it must be replaced, unless it is the "-" operator
+ * (Ok) if the last character is an operator and it is pressed another operator, it must be replaced, unless it is the "-" operator
  *
  * if the two last character are an operator (* or /) and the "-" operator, it must be ignored
  *
  * if the two last characters are an operator and the "0" the next number will replace the "0"
  *
- * if any number is divided by "0" the result should be "" empty like "C" pressed
+ * (Ok) if any number is divided by "0" the result should be "" empty like "C" pressed
  *
  * if the "=" was pressed and the result is shown, the next key will:
  *      - if a number: replace the screen value
@@ -40,12 +41,60 @@ const Calculator = () => {
 
   const reset = () => setScreen("");
 
-  const equals = () => setScreen((screen) => eval(screen));
+  const equals = () => {
+    const operators = [""]
+    for (const element of screen) {
+      const actual = operators[operators.length-1]
+      if(pattern.test(actual + element)) {
+          operators[operators.length-1] = operators[operators.length-1]+ element
+      } else {
+        if((/^-\d*$/.test(actual)) && (operators[operators.length-2] == "*" || operators[operators.length-2] === "/") && pattern.test(element)) {
+          operators[operators.length-1] = operators[operators.length-1]+ element
+        }else {
+          operators.push(element)
+        }
+      }
+    }
+    const result = resultOperation(operators)
+    setScreen(_ => result.toString());
+  }
 
-  //const
+  const resultOperation = (operators) => {
+    if(operators.length < 3 || operators[0] === ""){
+      return operators[0]
+    }
+    const result = calculate(operators[0], operators[1], operators[2])
+    return resultOperation([result].concat(operators.splice(3)))
+  }
+
+  const calculate = (n1, operator, n2) => {
+    const prev = parseFloat(n1)
+    const current = parseFloat(n2)
+    if (isNaN(prev) || isNaN(current)) return
+    switch (operator) {
+      case '+':
+        return prev + current
+      case '-':
+        return prev - current
+      case '*':
+        return prev * current
+      case '/':
+        return  current !== 0 ? Math.floor(prev/current) : "";
+      default:
+        return 0
+    }
+  }
 
   const onPress = (option) => {
-    setScreen((screen) => screen + option);
+    if(!pattern.test(screen[screen.length -1]) && !pattern.test(option)) {
+      if(option === "-" && (screen[screen.length -1] === "*" || screen[screen.length -1] === "/"))
+        setScreen((screen) => screen + option);
+      setScreen((screen) => screen.slice(0, -1) + option);
+    } if(screen[screen.length -1] == 0 && !pattern.test(screen[screen.length -2])) {
+      setScreen((screen) => screen.slice(0, -1) + option);
+    } else {
+      setScreen((screen) => screen + option);
+    }
   };
 
   return (
